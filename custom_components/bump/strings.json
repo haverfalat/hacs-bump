@@ -1,0 +1,59 @@
+{
+  "title": "Bump Friends",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Bump",
+        "menu_options": {
+          "session": "Paste an existing session (reuse login)",
+          "phone": "Log in with phone and SMS code"
+        }
+      },
+      "session": {
+        "title": "Reuse your existing Bump login",
+        "description": "Paste the complete bump1 session string from bump_session.py. This does not create a new login.",
+        "data": {
+          "session": "Session export"
+        }
+      },
+      "phone": {
+        "title": "Phone login",
+        "description": "This requests an SMS and creates a new login, which may replace another device session. Use session import to reuse your current login.",
+        "data": {
+          "phone": "Phone number (including +country code)",
+          "calling_code": "Country calling code",
+          "first_name": "First name",
+          "last_name": "Last name",
+          "age": "Age"
+        }
+      },
+      "code": {
+        "title": "Verify SMS code",
+        "data": {
+          "code": "SMS code"
+        }
+      }
+    },
+    "error": {
+      "invalid_session": "Invalid session export or different account.",
+      "invalid_auth": "Session expired or replaced. Import a working session or log in again.",
+      "cannot_connect": "Could not connect to Bump.",
+      "invalid_phone": "Check the phone number and country calling code.",
+      "invalid_code": "Code verification failed. Check the code and try again."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "Session updated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Location freshness",
+        "data": {
+          "stale_seconds": "Consider location stale after this many seconds"
+        }
+      }
+    }
+  }
+}
