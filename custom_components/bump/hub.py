@@ -25,6 +25,7 @@ class BumpHub:
         self.token = self.session['token']
         self.state = FriendState()
         self.stale_seconds = entry.options.get('stale_seconds', DEFAULT_STALE_SECONDS)
+        self.show_map_dashboard = entry.options.get('show_map_dashboard', True)
         self.stop = threading.Event()
         self.tasks = []
         self.listeners = defaultdict(set)
@@ -70,7 +71,7 @@ class BumpHub:
             changed = self.state.apply_friends(payload)
             registry = dr.async_get(self.hass)
             for uid, person in self.state.people.items():
-                device = registry.async_get_device(identifiers={('bump', f'{self.session["user_uid"]}_{uid}')})
+                device = registry.async_get_device_by_identifier(('bump', f'{self.session["user_uid"]}_{uid}'), self.entry.entry_id)
                 name = ' '.join(x for x in (person.get('first_name'), person.get('last_name')) if x) or uid
                 if device and device.name != name:
                     registry.async_update_device(device.id, name=name)

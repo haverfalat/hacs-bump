@@ -51,7 +51,21 @@ App active means Bump reports foreground activity. It does **not** prove that so
 
 Names and friend membership refresh every five minutes. New friends get entities automatically; removed friends become unavailable. A new location snapshot replaces the previous snapshot, and each realtime location replaces the person's old record, so missing fields do not retain previously exposed values. Stream disconnects mark entities unavailable and reconnect with bounded backoff. Options let you adjust the stale-location threshold, default 15 minutes. Freshness is recalculated every 30 seconds; pushed coordinates are applied immediately.
 
-## Map and history
+## Automatic Bump-only map (version 0.2.0)
+
+Updating the integration and restarting Home Assistant automatically adds **Bump map** to the sidebar. No YAML, HACS frontend cards or manual entity selection are needed. It includes only enabled Bump location trackers from that account. New friends, removed friends, updated names and renamed tracker entity IDs are reflected automatically. Each configured Bump account gets its own map.
+
+The map uses Home Assistant's native map card with **marker clustering enabled**, **auto-fit disabled** and **history trails disabled**. Nearby friends group together; marker updates do not repeatedly pan or zoom the map, and opening it does not request everyone's history paths. These settings follow the [official map-card options](https://www.home-assistant.io/dashboards/map/). Coordinates still arrive directly from the live Bump stream; no artificial update delay is added.
+
+This dashboard is generated and read-only. To customize it, copy its card into a dashboard you manage. Under the integration's **Configure** options, turn off **Show automatic Bump-only map dashboard** to hide it. Unloading/removing the integration removes its generated panel without deleting your dashboards. A conflicting existing dashboard URL is left untouched.
+
+To update, replace `/config/custom_components/bump` with the folder from the new ZIP and restart Home Assistant. Your saved login is reused.
+
+Performance change: unchanged tracker states no longer emit forced updates on every 30-second timer tick. Location age and freshness remain available through their dedicated sensor and binary sensor; the changing `location_age_seconds` and `location_fresh` tracker attributes were removed to avoid refreshing every map marker when only time has passed. Raw location details, timestamps, battery and activity attributes remain available. Recorder history still records actual tracker changes.
+
+The backend test creates 140 Bump friends, verifies exactly those 140 trackers on the generated map, tests entity renames, and confirms that a freshness tick emits no tracker change events. Browser frame rate on your device has not been measured; a large dispersed friend list can still be heavier than a small map.
+
+## Custom map and history
 
 Add the `device_tracker` entities to a Home Assistant Map card. For example, replace these IDs with the ones created in your installation:
 
