@@ -13,7 +13,7 @@ class FriendState:
 
     def apply_friends(self, rows):
         old = self.people
-        self.people = {str(row['user_uid']): dict(row) for row in rows}
+        self.people = {str(row['user_uid']): dict(row) for row in rows if row.get('user_uid')}
         removed = set(old) - set(self.people)
         for uid in removed:
             self.locations.pop(uid, None)
