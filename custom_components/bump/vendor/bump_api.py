@@ -246,17 +246,28 @@ def decode_location(data: bytes) -> dict:
     return result
 
 
+def _decode_location_rows(rows):
+    """A malformed friend must not prevent other locations from loading."""
+    result = []
+    for raw in rows:
+        try:
+            result.append(decode_location(raw))
+        except (ValueError, TypeError, struct.error, OverflowError):
+            continue
+    return result
+
+
 def decode_location_event(data: bytes) -> dict:
     # SubscribeDownEvent oneof: 1 snapshot {repeated states=1},
     # 2 realtime {state=1}. Native realtime field decoder: 0x24858a0.
     snapshot = scalar(data, 1)
     if snapshot is not None:
-        return {"event": "snapshot", "locations": [decode_location(raw) for raw in values(snapshot, 1)]}
+        return {"event": "snapshot", "locations": _decode_location_rows(values(snapshot, 1))}
     update = scalar(data, 2)
     if update is not None:
         state = scalar(update, 1)
         if state is not None:
-            return {"event": "update", "locations": [decode_location(state)]}
+            return {"event": "update", "locations": _decode_location_rows([state])}
     return {"event": "unknown", "protobuf": message_tree(data), "locations": []}
 
 
@@ -323,10 +334,24 @@ class Client:
             raise ValueError("Expected initial FriendshipsV3 snapshot")
         result = []
         for record in values(snapshot, 1):
-            user = scalar(scalar(scalar(record, 1), 1), 1)
-            result.append({"user_uid": str(scalar(scalar(user, 1), 1, 0)),
-                           "first_name": scalar(user, 2, b"").decode(),
-                           "last_name": scalar(user, 3, b"").decode()})
+            try:
+                user = record
+                for _ in range(3):
+                    user = scalar(user, 1)
+                    if not isinstance(user, bytes):
+                        break
+                if not isinstance(user, bytes):
+                    continue
+                raw_uid = scalar(user, 1)
+                uid = scalar(raw_uid, 1) if isinstance(raw_uid, bytes) else None
+                if not isinstance(uid, int) or not 0 < uid < 1 << 64:
+                    continue
+                names = [scalar(user, tag, b"") for tag in (2, 3)]
+                result.append({"user_uid": str(uid),
+                               "first_name": names[0].decode(errors="replace") if isinstance(names[0], bytes) else "",
+                               "last_name": names[1].decode(errors="replace") if isinstance(names[1], bytes) else ""})
+            except (ValueError, TypeError):
+                continue
         return result
 
     def location_snapshot(self, token: bytes) -> list[dict]:

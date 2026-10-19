@@ -2,6 +2,22 @@
 import time
 
 
+def valid_rows(rows):
+    """Ignore incomplete records; never invent an identity for a friend."""
+    if not isinstance(rows, (list, tuple)):
+        return
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        uid = row.get('user_uid')
+        if isinstance(uid, bool) or not isinstance(uid, (str, int)):
+            continue
+        uid = str(uid).strip()
+        if not uid or uid == '0':
+            continue
+        yield {**row, 'user_uid': uid}
+
+
 class FriendState:
     def __init__(self):
         self.people = {}
@@ -13,7 +29,7 @@ class FriendState:
 
     def apply_friends(self, rows):
         old = self.people
-        self.people = {str(row['user_uid']): dict(row) for row in rows}
+        self.people = {str(row['user_uid']): dict(row) for row in valid_rows(rows)}
         removed = set(old) - set(self.people)
         for uid in removed:
             self.locations.pop(uid, None)
@@ -21,7 +37,9 @@ class FriendState:
         return set(old) | set(self.people)
 
     def apply_locations(self, event):
-        kind = event['event']
+        if not isinstance(event, dict):
+            return set()
+        kind = event.get('event')
         if kind == 'connected':
             # Socket open alone is not proof that a location snapshot arrived.
             return set()
@@ -38,7 +56,7 @@ class FriendState:
         if kind == 'snapshot':
             self.locations = {}
         changed = set() if was_connected else set(self.people)
-        for row in event['locations']:
+        for row in valid_rows(event.get('locations')):
             uid = row['user_uid']
             if uid not in self.people:
                 continue
@@ -49,12 +67,14 @@ class FriendState:
         return old_ids | changed if kind == 'snapshot' else changed
 
     def apply_co_presence(self, event):
+        if not isinstance(event, dict):
+            return set()
         if event.get('event') not in ('snapshot', 'update'):
             return set()
         changed = set(self.co_presence) if event['event'] == 'snapshot' else set()
         if event['event'] == 'snapshot':
             self.co_presence = {}
-        for row in event.get('people', []):
+        for row in valid_rows(event.get('people')):
             uid = row['user_uid']
             if uid in self.people:
                 self.co_presence[uid] = row

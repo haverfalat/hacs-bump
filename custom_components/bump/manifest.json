@@ -1,13 +1,15 @@
 {
   "domain": "bump",
   "name": "Bump Friends",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "config_flow": true,
   "documentation": "https://developers.home-assistant.io/docs/creating_integration_file_structure/",
   "requirements": [
     "h2>=4.3,<5"
   ],
-  "dependencies": [],
+  "dependencies": [
+    "lovelace"
+  ],
   "codeowners": [],
   "iot_class": "cloud_push",
   "integration_type": "hub"
