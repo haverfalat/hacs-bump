@@ -49,10 +49,9 @@
   "options": {
     "step": {
       "init": {
-        "title": "Bump map and freshness",
+        "title": "Location freshness",
         "data": {
-          "stale_seconds": "Consider location stale after this many seconds",
-          "show_map_dashboard": "Show automatic Bump-only map dashboard"
+          "stale_seconds": "Consider location stale after this many seconds"
         }
       }
     }

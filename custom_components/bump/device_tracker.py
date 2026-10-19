@@ -8,12 +8,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class BumpTracker(BumpEntity, TrackerEntity):
     @property
-    def force_update(self):
-        # HA's push trackers default to True. Age/freshness ticks must not
-        # broadcast an unchanged tracker to the map and Recorder.
-        return False
-
-    @property
     def source_type(self):
         return SourceType.GPS
 
@@ -36,6 +30,8 @@ class BumpTracker(BumpEntity, TrackerEntity):
     @property
     def extra_state_attributes(self):
         person = self.hub.state.people.get(self.uid, {})
-        return {**person, **self.row,
+        age = self.hub.state.age(self.uid)
+        return {**person, **self.row, 'location_age_seconds': round(age, 1) if age is not None else None,
+                'location_fresh': age <= self.hub.stale_seconds if age is not None else None,
                 'co_presence': self.hub.state.live_co_presence(self.uid),
                 'stream_connected': self.hub.state.connected}

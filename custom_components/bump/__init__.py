@@ -3,7 +3,6 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from .const import PLATFORMS
 from .hub import BumpHub
-from .dashboard import async_setup_dashboard
 
 
 async def async_setup_entry(hass, entry):
@@ -17,7 +16,6 @@ async def async_setup_entry(hass, entry):
     entry.runtime_data = hub
     entry.async_on_unload(entry.add_update_listener(async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    await async_setup_dashboard(hass, entry)
     async def on_shutdown(_event):
         await hub.async_stop()
     entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, on_shutdown))
@@ -34,8 +32,5 @@ async def async_unload_entry(hass, entry):
 async def async_options_updated(hass, entry):
     from .const import DEFAULT_STALE_SECONDS
     hub = entry.runtime_data
-    if entry.options.get('show_map_dashboard', True) != getattr(hub, 'show_map_dashboard', True):
-        await hass.config_entries.async_reload(entry.entry_id)
-        return
     hub.stale_seconds = entry.options.get('stale_seconds', DEFAULT_STALE_SECONDS)
     hub.emit(set(hub.state.people))

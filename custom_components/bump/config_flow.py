@@ -88,6 +88,5 @@ class BumpOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title='', data=user_input)
         return self.async_show_form(step_id='init', data_schema=vol.Schema({
-            vol.Optional('show_map_dashboard', default=self.config_entry.options.get('show_map_dashboard', True)): bool,
             vol.Required('stale_seconds', default=self.config_entry.options.get('stale_seconds', DEFAULT_STALE_SECONDS)):
                 vol.All(vol.Coerce(int), vol.Range(min=30, max=86400))}))
