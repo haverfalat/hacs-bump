@@ -37,5 +37,6 @@ async def async_options_updated(hass, entry):
     if entry.options.get('show_map_dashboard', True) != getattr(hub, 'show_map_dashboard', True):
         await hass.config_entries.async_reload(entry.entry_id)
         return
+    hub.wake_enabled = entry.options.get('wake_friends', True)
     hub.stale_seconds = entry.options.get('stale_seconds', DEFAULT_STALE_SECONDS)
     hub.emit(set(hub.state.people))

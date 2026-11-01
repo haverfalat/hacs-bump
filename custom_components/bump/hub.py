@@ -9,7 +9,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers import device_registry as dr
 from .model import FriendState
-from .vendor.bump_api import decode_location_event
+from .vendor.bump_api import decode_location_event,wake_friends_request
 from .vendor.bump_read import Client
 from .vendor.bump_session import import_session
 from .const import DEFAULT_STALE_SECONDS
@@ -33,9 +33,14 @@ class BumpHub:
         self.remove_timer = None
         self.auth_failed = False
         self.stream_status = {}
+        self.wake_enabled = entry.options.get('wake_friends', True)
+        self.wake_targets = ()
+        self.wake_last_sent_at = None
+        self.wake_target_count = 0
 
     def initial_load(self):
         self.state.apply_friends(self.client.friends(self.token))
+        self.wake_targets = tuple(self.state.people)
         try:
             locations = self.client.location_snapshot(self.token)
         except Exception as error:
@@ -77,6 +82,7 @@ class BumpHub:
             self.stream_status['locations'] = payload['event']
         elif kind == 'friends':
             changed = self.state.apply_friends(payload)
+            self.wake_targets = tuple(self.state.people)
             registry = dr.async_get(self.hass)
             for uid, person in self.state.people.items():
                 device = registry.async_get_device_by_identifier(('bump', f'{self.session["user_uid"]}_{uid}'), self.entry.entry_id)
@@ -84,6 +90,11 @@ class BumpHub:
                 if device and device.name != name:
                     registry.async_update_device(device.id, name=name)
             _LOGGER.debug('Friend list refreshed: %s people', len(self.state.people))
+        elif kind == 'wake_sent':
+            self.wake_last_sent_at = payload['time']
+            self.wake_target_count = payload['count']
+            self.stream_status['wake'] = 'sent' if payload['count'] else 'idle'
+            changed = set()
         elif kind == 'co_presence':
             changed = self.state.apply_co_presence(payload)
             self.stream_status[kind] = payload.get('event', 'update')
@@ -110,7 +121,13 @@ class BumpHub:
                     with self.client.stream('api.front.location.Service/Subscribe', self.token) as stream:
                         initial_deadline = time.monotonic() + 20
                         received = False
+                        last_wake = None
                         while not self.stop.is_set():
+                            targets = self.wake_targets if self.wake_enabled else ()
+                            if targets != last_wake:
+                                stream.send(wake_friends_request(targets))
+                                last_wake = targets
+                                self.post('wake_sent', {'time': time.time(), 'count': len(targets)})
                             raw = stream.recv(1)
                             if raw is None:
                                 if not received and time.monotonic() > initial_deadline:
@@ -123,7 +140,7 @@ class BumpHub:
                             self.post('locations', event)
                 elif kind == 'friends':
                     self.post(kind, self.client.friends(self.token))
-                    if self.stop.wait(300):
+                    if self.stop.wait(20):
                         return
                     continue
                 else:

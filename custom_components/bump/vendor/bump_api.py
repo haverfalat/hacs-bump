@@ -445,3 +445,9 @@ class Client:
             while time.monotonic() < until:
                 time.sleep(min(0.25, until - time.monotonic()))
 
+
+
+def wake_friends_request(user_uids):
+    """Continuous WakeUpFriends on Subscribe; full native encoder 0x247a004."""
+    targets=b''.join(field(1,uid_bytes(uid)) for uid in user_uids)
+    return field(1,targets+field(2,1))
