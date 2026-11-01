@@ -1,16 +1,19 @@
 {
   "domain": "bump",
   "name": "Bump Friends",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "config_flow": true,
-  "documentation": "https://developers.home-assistant.io/docs/creating_integration_file_structure/",
+  "documentation": "https://github.com/haverfalat/hacs-bump",
   "requirements": [
     "h2>=4.3,<5"
   ],
   "dependencies": [
     "lovelace"
   ],
-  "codeowners": [],
+  "codeowners": [
+    "@haverfalat"
+  ],
   "iot_class": "cloud_push",
-  "integration_type": "hub"
+  "integration_type": "hub",
+  "issue_tracker": "https://github.com/haverfalat/hacs-bump/issues"
 }

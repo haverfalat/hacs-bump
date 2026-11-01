@@ -51,11 +51,20 @@
       "init": {
         "title": "Bump map and freshness",
         "data": {
-          "wake_friends": "Request live location updates for all friends",
           "stale_seconds": "Consider location stale after this many seconds",
-          "show_map_dashboard": "Show automatic Bump-only map dashboard"
+          "show_map_dashboard": "Show automatic Bump-only map dashboard",
+          "wake_mode": "Live location requests",
+          "wake_user_uids": "User IDs to wake up"
+        },
+        "data_description": {
+          "wake_mode": "Changes apply immediately without reloading the integration.",
+          "wake_user_uids": "Used in Selected user IDs mode. Separate IDs with commas, spaces, or new lines. Only current friends are requested."
         }
       }
+    },
+    "error": {
+      "invalid_wake_users": "Enter valid numeric user IDs separated by commas, spaces, or new lines.",
+      "empty_wake_users": "Enter at least one user ID for selected mode."
     }
   }
 }

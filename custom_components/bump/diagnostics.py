@@ -1,7 +1,7 @@
 """Operational diagnostics omit tokens, UIDs, names, locations, and raw events."""
 async def async_get_config_entry_diagnostics(hass, entry):
     hub = entry.runtime_data
-    return {'wake_enabled': hub.wake_enabled, 'wake_target_count': hub.wake_target_count,
+    return {'wake_mode': hub.wake_config[0], 'wake_enabled': hub.wake_enabled, 'wake_target_count': hub.wake_target_count,
             'wake_last_sent_at': hub.wake_last_sent_at, 'connected': hub.state.connected, 'auth_failed': hub.auth_failed,
             'friend_count': len(hub.state.people), 'locations_count': len(hub.state.locations),
             'streams': dict(hub.stream_status), 'stale_seconds': hub.stale_seconds,

@@ -4,7 +4,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
-from .const import DOMAIN, DEFAULT_STALE_SECONDS
+from .const import DOMAIN, DEFAULT_STALE_SECONDS,parse_wake_user_uids,wake_mode
 from .vendor.bump_read import Client
 from .vendor.bump_session import PhoneLogin, import_session
 
@@ -85,10 +85,23 @@ class BumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class BumpOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
+        errors={}
         if user_input is not None:
-            return self.async_create_entry(title='', data=user_input)
+            try:
+                ids=parse_wake_user_uids(user_input.get('wake_user_uids',''))
+                if user_input.get('wake_mode')=='selected' and not ids:
+                    errors['wake_user_uids']='empty_wake_users'
+                else:
+                    data={**user_input,'wake_user_uids':', '.join(ids)}
+                    return self.async_create_entry(title='', data=data)
+            except ValueError:
+                errors['wake_user_uids']='invalid_wake_users'
+        values=user_input if user_input is not None else self.config_entry.options
         return self.async_show_form(step_id='init', data_schema=vol.Schema({
-            vol.Optional('wake_friends', default=self.config_entry.options.get('wake_friends', True)): bool,
-            vol.Optional('show_map_dashboard', default=self.config_entry.options.get('show_map_dashboard', True)): bool,
-            vol.Required('stale_seconds', default=self.config_entry.options.get('stale_seconds', DEFAULT_STALE_SECONDS)):
-                vol.All(vol.Coerce(int), vol.Range(min=30, max=86400))}))
+            vol.Required('wake_mode', default=wake_mode(values)): vol.In({
+                'all':'All friends','off':'Nobody','selected':'Selected user IDs'}),
+            vol.Optional('wake_user_uids', default=values.get('wake_user_uids','')):
+                TextSelector(TextSelectorConfig(multiline=True)),
+            vol.Optional('show_map_dashboard', default=values.get('show_map_dashboard', True)): bool,
+            vol.Required('stale_seconds', default=values.get('stale_seconds', DEFAULT_STALE_SECONDS)):
+                vol.All(vol.Coerce(int), vol.Range(min=30, max=86400))}), errors=errors)

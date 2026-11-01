@@ -12,7 +12,7 @@ from .model import FriendState
 from .vendor.bump_api import decode_location_event,wake_friends_request
 from .vendor.bump_read import Client
 from .vendor.bump_session import import_session
-from .const import DEFAULT_STALE_SECONDS
+from .const import DEFAULT_STALE_SECONDS,parse_wake_user_uids,wake_mode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,10 +33,28 @@ class BumpHub:
         self.remove_timer = None
         self.auth_failed = False
         self.stream_status = {}
-        self.wake_enabled = entry.options.get('wake_friends', True)
+        self.configure_wake(entry.options)
         self.wake_targets = ()
         self.wake_last_sent_at = None
         self.wake_target_count = 0
+
+    def configure_wake(self, options):
+        mode=wake_mode(options)
+        try:uids=parse_wake_user_uids(options.get('wake_user_uids',''))
+        except ValueError:uids=()
+        # Atomic policy replacement for the subscription worker thread.
+        self.wake_config=(mode,frozenset(uids))
+
+    @property
+    def wake_enabled(self):
+        return self.wake_config[0]!='off'
+
+    def requested_wake_targets(self):
+        mode,uids=self.wake_config
+        friends=self.wake_targets
+        if mode=='all':return friends
+        if mode=='selected':return tuple(uid for uid in friends if uid in uids)
+        return ()
 
     def initial_load(self):
         self.state.apply_friends(self.client.friends(self.token))
@@ -123,7 +141,7 @@ class BumpHub:
                         received = False
                         last_wake = None
                         while not self.stop.is_set():
-                            targets = self.wake_targets if self.wake_enabled else ()
+                            targets = self.requested_wake_targets()
                             if targets != last_wake:
                                 stream.send(wake_friends_request(targets))
                                 last_wake = targets
